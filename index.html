@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>কেমিস্ট্রি ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "কোন জৈব যৌগে H atom নাই?",
+          options: {
+            A: "cyclohexane",
+            B: "dichloromethane",
+            C: "iodoform",
+            D: "hexachlorobenzene",
+          },
+          correct: "D",
+          explanation:
+            "<p>হেক্সাক্লোরোবেনজিন (C₆Cl₆) হলো একটি জৈব যৌগ যেখানে কোনো হাইড্রোজেন পরমাণু নেই। এর গঠনে বেনজিন বলয়ের প্রতিটি কার্বন পরমাণুর সাথে একটি করে ক্লোরিন পরমাণু যুক্ত থাকে। অন্যান্য অপশনগুলোতে হাইড্রোজেন পরমাণু বিদ্যমান: সাইক্লোহেক্সেন (C₆H₁₂), ডাইক্লোরোমিথেন (CH₂Cl₂), এবং আয়োডোফর্ম (CHI₃)।</p>",
+        },
+        {
+          id: 2,
+          question: "বেনজিনে কার্বন-কার্বন বন্ধন দৈর্ঘ্য কত?",
+          options: {
+            A: "0.134 nm",
+            B: "0.195 nm",
+            C: "0.139 nm",
+            D: "0.123 nm",
+          },
+          correct: "C",
+          explanation:
+            "<p>বেনজিনের কার্বন-কার্বন বন্ধন দৈর্ঘ্য 0.139 nm। এটি একক বন্ধন (0.154 nm) এবং দ্বিবন্ধন (0.134 nm) এর মাঝামাঝি একটি দৈর্ঘ্য। বেনজিনের রেজোন্যান্স কাঠামোর কারণে এর কার্বন-কার্বন বন্ধনগুলি একক ও দ্বিবন্ধনের মাঝামাঝি চরিত্র ধারণ করে, যা একে বিশেষ স্থায়িত্ব প্রদান করে।</p>",
+        },
+        {
+          id: 3,
+          question: "প্রতিস্থাপন বিক্রিয়ায় নিচের কোন ক্রমটি সঠিক?",
+          options: {
+            A: "Y > X > C₆H₆",
+            B: "X > Y > C₆H₆",
+            C: "Y > C₆H₆ > X",
+            D: "X > C₆H₆ > Y",
+          },
+          correct: "C",
+          explanation:
+            "<p>এই প্রশ্নের সঠিক ব্যাখ্যার জন্য 'X' এবং 'Y' কী বোঝানো হয়েছে তা উল্লেখ করা প্রয়োজন। তবে, যদি Y একটি সক্রিয়কারী গ্রুপ (যেমন -OH, -NH₂) এবং X একটি নিষ্ক্রিয়কারী গ্রুপ (যেমন -NO₂, -CHO) হয়, তাহলে প্রতিস্থাপন বিক্রিয়ায় সক্রিয়তার ক্রম হবে: সক্রিয় বেনজিন ডেরিভেটিভ (Y) > বেনজিন (C₆H₆) > নিষ্ক্রিয় বেনজিন ডেরিভেটিভ (X)। উদাহরণস্বরূপ, ফেনল (Y) > বেনজিন (C₆H₆) > নাইট্রোবেনজিন (X)।</p>",
+        },
+        {
+          id: 4,
+          question:
+            "নিচের কোনটি উত্তপ্ত লোহার উপস্থিতিতে অ্যাসিটিলিন দ্বারা উৎপন্ন হয়?",
+          options: {
+            A: "Neoprene",
+            B: "Ethane",
+            C: "Cyclohexane",
+            D: "Benzene",
+          },
+          correct: "D",
+          explanation:
+            "<p>উত্তপ্ত লোহার নলের (প্রায় 400°C) উপস্থিতিতে অ্যাসিটিলিন (C₂H₂) গ্যাসের ট্রাইমারাইজেশন বিক্রিয়ার মাধ্যমে বেনজিন (C₆H₆) উৎপন্ন হয়। এটি একটি অ্যারোমাটাইজেশন বিক্রিয়া। এই বিক্রিয়াটি রাসায়নিক শিল্পে বেনজিন উৎপাদনের একটি গুরুত্বপূর্ণ পদ্ধতি।</p>\n    <p>3C₂H₂ → C₆H₆ (উত্তপ্ত Fe নল)</p>",
+        },
+        {
+          id: 5,
+          question:
+            "বেনজিন সালফোনেশনের জন্য নিম্নের কত °C তাপমাত্রার প্রয়োজন হয়?",
+          options: {
+            A: "110",
+            B: "80",
+            C: "100",
+            D: "90",
+          },
+          correct: "C",
+          explanation:
+            "<p>বেনজিনের সালফোনেশন বিক্রিয়াটি (বেনজিনকে গাঢ় H₂SO₄ বা ধুমায়িত H₂SO₄ দ্বারা সালফোনিক এসিডে রূপান্তর) সাধারণত 100°C তাপমাত্রায় করা হয়। এই তাপমাত্রায় বিক্রিয়াটি পর্যাপ্ত গতিতে সম্পন্ন হয় এবং বেনজিন সালফোনিক এসিড উৎপন্ন হয়।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "টলুইন সালফোনেশনের জন্য নিম্নের কত °C তাপমাত্রা প্রয়োজন হয়?",
+          options: {
+            A: "5",
+            B: "20",
+            C: "10",
+            D: "0",
+          },
+          correct: "A",
+          explanation:
+            "<p>টলুইন বেনজিনের চেয়ে বেশি সক্রিয় কারণ মিথাইল (-CH₃) গ্রুপ বেনজিন বলয়কে সক্রিয় করে। তাই টলুইনের সালফোনেশনের জন্য বেনজিনের চেয়ে কম তাপমাত্রা প্রয়োজন হয়। সাধারণত, টলুইনের সালফোনেশন বিক্রিয়া 5°C তাপমাত্রায় ভালোভাবে সম্পন্ন হয়, যেখানে অর্থো ও প্যারা টলুইন সালফোনিক এসিড উৎপন্ন হয়।</p>",
+        },
+        {
+          id: 7,
+          question: "কোন যৌগটিতে π বন্ধন আছে?",
+          options: {
+            A: "বেনজিন",
+            B: "ক্লোরোফরম",
+            C: "মিথানল",
+            D: "ইথেন",
+          },
+          correct: "A",
+          explanation:
+            "<p>পাই (π) বন্ধন সাধারণত দ্বিবন্ধন বা ত্রিবন্ধনে বিদ্যমান থাকে। বেনজিন (C₆H₆) অণুতে তিনটি দ্বিবন্ধন রয়েছে, যার প্রতিটিতে একটি পাই বন্ধন এবং একটি সিগমা বন্ধন থাকে। সুতরাং, বেনজিনে π বন্ধন বিদ্যমান। ক্লোরোফরম (CHCl₃), মিথানল (CH₃OH), এবং ইথেন (C₂H₆) হলো সম্পৃক্ত যৌগ, যেখানে শুধুমাত্র সিগমা বন্ধন থাকে।</p>",
+        },
+        {
+          id: 8,
+          question: "উর্টজ ফিটিগ বিক্রিয়ায় কোনটি উৎপন্ন হয়?",
+          options: {
+            A: "উচ্চতর অ্যালকেন",
+            B: "অ্যালকাইল হ্যালাইড",
+            C: "অ্যালকাইল বেনজিন",
+            D: "ফিনাইল হ্যালাইড",
+          },
+          correct: "C",
+          explanation:
+            "<p>উর্টজ ফিটিগ বিক্রিয়া হলো একটি কাপলিং বিক্রিয়া যেখানে একটি অ্যালকাইল হ্যালাইড এবং একটি অ্যারাইল হ্যালাইডকে শুষ্ক ইথার দ্রাবকে সোডিয়ামের সাথে বিক্রিয়া করানো হয়। এই বিক্রিয়ায় অ্যালকাইল বেনজিন উৎপন্ন হয়। এটি অ্যারোমেটিক যৌগসমূহে কার্বন শিকল সংযোজনের একটি গুরুত্বপূর্ণ পদ্ধতি।</p>\n    <p>উদাহরণ: C₆H₅Br + CH₃Br + 2Na → C₆H₅CH₃ + 2NaBr (শুষ্ক ইথার)</p>",
+        },
+        {
+          id: 9,
+          question:
+            "কোন যৌগটি অ্যালিফেটিক ও অ্যারোমেটিক উভয় ধর্ম প্রদর্শন করে?",
+          options: {
+            A: "বেনজিন",
+            B: "সাইক্লোহেক্সেন",
+            C: "টলুইন",
+            D: "ক্লোরোবেনজিন",
+          },
+          correct: "C",
+          explanation:
+            "<p>টলুইন (C₆H₅-CH₃) একটি যৌগ যেখানে একটি বেনজিন বলয় (অ্যারোমেটিক অংশ) এবং একটি মিথাইল গ্রুপ (অ্যালিফেটিক অংশ) উভয়ই বিদ্যমান। ফলে, টলুইন অ্যারোমেটিক বিক্রিয়া (যেমন ইলেকট্রনাকর্ষী প্রতিস্থাপন) এবং অ্যালিফেটিক বিক্রিয়া (যেমন পার্শ্ব শিকলের প্রতিস্থাপন বা জারণ) উভয়ই প্রদর্শন করে। বেনজিন এবং ক্লোরোবেনজিন মূলত অ্যারোমেটিক এবং সাইক্লোহেক্সেন অ্যালিফেটিক।</p>",
+        },
+        {
+          id: 10,
+          question: "গ্যামেক্সিন পাউডারের সংকেত কোনটি?",
+          options: {
+            A: "C₆Cl₆",
+            B: "C₆H₆Cl₆",
+            C: "C₆H₅Cl",
+            D: "CHCl₃",
+          },
+          correct: "B",
+          explanation:
+            "<p>গ্যামেক্সিন, যা বেনজিন হেক্সাক্লোরাইড (BHC) নামেও পরিচিত, একটি কীটনাশক। এর রাসায়নিক সংকেত হলো C₆H₆Cl₆। এটি বেনজিনকে আলোর উপস্থিতিতে ক্লোরিনের সাথে যুত বিক্রিয়ার মাধ্যমে উৎপন্ন হয়। প্রতিটি কার্বন পরমাণুর সাথে একটি হাইড্রোজেন এবং একটি ক্লোরিন পরমাণু যুক্ত থাকে।</p>",
+        },
+        {
+          id: 11,
+          question: "ফ্রিডেল বিক্রিয়ার সাহায্যে কী করা যায়?",
+          options: {
+            A: "কার্বন শিকল বৃদ্ধি",
+            B: "কার্বন শিকল হ্রাস",
+            C: "বেনজিন চক্রে পার্শ্ব শিকল প্রবিষ্টকরণ",
+            D: "চক্রে সংযোজন",
+          },
+          correct: "C",
+          explanation:
+            "<p>ফ্রিডেল-ক্রাফট বিক্রিয়া, বিশেষ করে ফ্রিডেল-ক্রাফট অ্যালকাইলেশন, বেনজিন চক্রে অ্যালকাইল গ্রুপ (পার্শ্ব শিকল) প্রবিষ্ট করানোর জন্য ব্যবহৃত হয়। এই বিক্রিয়ায় অনার্দ্র AlCl₃ এর মতো লুইস অ্যাসিড প্রভাবকের উপস্থিতিতে একটি অ্যারোমেটিক যৌগ অ্যালকাইল হ্যালাইডের সাথে বিক্রিয়া করে অ্যালকাইলঅ্যারিন উৎপন্ন করে। এটি ইলেকট্রনাকর্ষী প্রতিস্থাপন বিক্রিয়ার একটি উদাহরণ।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "নিচের কোন যৌগের অণুতে একের অধিক ধরনের সংকরিত C-পরমাণু আছে?",
+          options: {
+            A: "Cyclohexane",
+            B: "Benzene",
+            C: "Toluene",
+            D: "n-butane",
+          },
+          correct: "C",
+          explanation:
+            "<p>টলুইন (C₆H₅-CH₃) অণুতে দুই ধরনের সংকরিত কার্বন পরমাণু আছে। বেনজিন বলয়ের কার্বন পরমাণুগুলো sp<sup>2</sup> সংকরিত (কারণ তারা দ্বিবন্ধন গঠন করে)। অন্যদিকে, পার্শ্ব শিকলের মিথাইল গ্রুপের কার্বন পরমাণুটি sp<sup>3</sup> সংকরিত (কারণ এটি চারটি একক বন্ধন গঠন করে)। অন্যান্য যৌগে শুধুমাত্র এক ধরনের সংকরায়ন দেখা যায়।</p>",
+        },
+        {
+          id: 13,
+          question: "ফুটন্ত টলুইনে Cl₂ গ্যাস চালনা করলে কোনটি উৎপন্ন হয়?",
+          options: {
+            A: "বেনজো ট্রাইক্লোরাইড",
+            B: "ক্লোরোবেনজিন",
+            C: "p-ক্লোরো টলুইন",
+            D: "o-ক্লোরো টলুইন",
+          },
+          correct: "A",
+          explanation:
+            "<p>ফুটন্ত টলুইনে বা সূর্যালোকের উপস্থিতিতে Cl₂ গ্যাস চালনা করলে পার্শ্ব শিকলে প্রতিস্থাপন বিক্রিয়া ঘটে। মিথাইল (-CH₃) গ্রুপের হাইড্রোজেন পরমাণুগুলো ক্লোরিন দ্বারা প্রতিস্থাপিত হয়। এই বিক্রিয়ায় বেনজো ট্রাইক্লোরাইড (C₆H₅CCl₃) উৎপন্ন হয়, যেখানে মিথাইল গ্রুপের তিনটি হাইড্রোজেন পরমাণুই ক্লোরিন দ্বারা প্রতিস্থাপিত হয়।</p>",
+        },
+        {
+          id: 14,
+          question: "C₆H₆ + A → AlCl₃ → C₆H₅-CH₃; এক্ষেত্রে 'A' যৌগটি কী?",
+          options: {
+            A: "CH₃CN",
+            B: "CH₃COCl",
+            C: "CH₃CH₂Cl",
+            D: "CH₃Cl",
+          },
+          correct: "D",
+          explanation:
+            "<p>প্রদত্ত বিক্রিয়াটি একটি ফ্রিডেল-ক্রাফট অ্যালকাইলেশন বিক্রিয়া, যেখানে বেনজিনের সাথে একটি অ্যালকাইল হ্যালাইড অনার্দ্র AlCl₃ প্রভাবকের উপস্থিতিতে বিক্রিয়া করে অ্যালকাইল বেনজিন উৎপন্ন করে। C₆H₅-CH₃ (টলুইন) উৎপন্ন হয়েছে, যেখানে একটি মিথাইল (-CH₃) গ্রুপ যুক্ত হয়েছে। সুতরাং, A যৌগটি হলো মিথাইল ক্লোরাইড (CH₃Cl)।</p>",
+        },
+        {
+          id: 15,
+          question: "বেনজিনে বন্ধনসমূহ হলো-",
+          options: {
+            A: "6σ + 6π",
+            B: "6σ + 13π",
+            C: "6σ + 3π",
+            D: "12σ + 3π",
+          },
+          correct: "D",
+          explanation:
+            "<p>বেনজিন (C₆H₆) একটি চাক্রিক যৌগ যেখানে ছয়টি কার্বন পরমাণু একটি বলয় তৈরি করে। প্রতিটি কার্বনের সাথে একটি হাইড্রোজেন পরমাণু যুক্ত থাকে।</p>\n    <ul>\n        <li>কার্বন-কার্বন সিগমা (σ) বন্ধন: বলয়ে 6টি C-C একক বন্ধন রয়েছে।</li>\n        <li>কার্বন-হাইড্রোজেন সিগমা (σ) বন্ধন: প্রতিটি কার্বনের সাথে একটি H যুক্ত থাকায় 6টি C-H বন্ধন রয়েছে।</li>\n        <li>পাই (π) বন্ধন: বেনজিনে তিনটি দ্বিবন্ধন থাকে, তাই 3টি π বন্ধন বিদ্যমান।</li>\n    </ul>\n    <p>মোট সিগমা বন্ধন = 6 (C-C) + 6 (C-H) = 12টি। মোট পাই বন্ধন = 3টি। সুতরাং, বেনজিনে 12σ + 3π বন্ধন রয়েছে।</p>",
+        },
+        {
+          id: 16,
+          question: "গ্যামাক্সিন কোনটি?",
+          options: {
+            A: "C₆H₆Cl₆",
+            B: "Cl₃C-NO₂",
+            C: "CF₂Cl₂",
+            D: "COCl₂",
+          },
+          correct: "A",
+          explanation:
+            "<p>গ্যামাক্সিন (Gamaxene) হলো বেনজিন হেক্সাক্লোরাইড (Benzene Hexachloride - BHC)। এর রাসায়নিক সংকেত C₆H₆Cl₆। এটি একটি বহুল ব্যবহৃত কীটনাশক। এটি বেনজিনকে আলোর উপস্থিতিতে ক্লোরিন গ্যাসের সাথে বিক্রিয়া করে উৎপন্ন হয়। অন্যান্য অপশনগুলি ভিন্ন যৌগ: Cl₃C-NO₂ (ক্লোরোপিক্রিন), CF₂Cl₂ (ডাইক্লোরোডাইফ্লুরোমিথেন), COCl₂ (ফসজিন)।</p>",
+        },
+        {
+          id: 17,
+          question: "নাইট্রেশন বিক্রিয়ায় নিচের কোন যৌগটি বেশি সক্রিয়?",
+          options: {
+            A: "বেনজিন",
+            B: "টলুইন",
+            C: "ক্লোরোবেনজিন",
+            D: "নাইট্রোবেনজিন",
+          },
+          correct: "B",
+          explanation:
+            "<p>নাইট্রেশন একটি ইলেকট্রনাকর্ষী প্রতিস্থাপন বিক্রিয়া। এই বিক্রিয়ায় অ্যারোমেটিক বলয়ের সক্রিয়তা নির্ভর করে বলয়ের ইলেকট্রন ঘনত্বের উপর। টলুইনে (-CH₃) মিথাইল গ্রুপটি ইলেকট্রন দানকারী (অতিযুগ্মতা প্রভাব), যা বেনজিন বলয়ের ইলেকট্রন ঘনত্ব বৃদ্ধি করে এবং একে বেনজিনের চেয়ে বেশি সক্রিয় করে তোলে। ক্লোরোবেনজিন (-Cl) নিষ্ক্রিয়কারী এবং নাইট্রোবেনজিন (-NO₂) শক্তিশালী নিষ্ক্রিয়কারী। তাই টলুইন সবচেয়ে বেশি সক্রিয়।</p>",
+        },
+        {
+          id: 18,
+          question: "নিচের কোন যৌগটিতে সঞ্চরণশীল ইলেকট্রন আছে?",
+          options: {
+            A: "C₂H₂",
+            B: "C₂H₆",
+            C: "C₆H₆",
+            D: "C₃H₈",
+          },
+          correct: "C",
+          explanation:
+            "<p>সঞ্চরণশীল ইলেকট্রন (delocalized electrons) সাধারণত অ্যারোমেটিক যৌগ এবং কনজুগেটেড পাই সিস্টেমে পাওয়া যায়। বেনজিন (C₆H₆) একটি অ্যারোমেটিক যৌগ, যার তিনটি দ্বিবন্ধনের পাই ইলেকট্রনগুলো পুরো বলয় জুড়ে সঞ্চরণশীল অবস্থায় থাকে। C₂H₂ (অ্যাসিটিলিন) এ পাই বন্ধন থাকলেও ইলেকট্রনগুলো সঞ্চরণশীল নয়, C₂H₆ (ইথেন) এবং C₃H₈ (প্রোপেন) হলো সম্পৃক্ত অ্যালকেন, যেখানে কোনো পাই বন্ধন বা সঞ্চরণশীল ইলেকট্রন নেই।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "বেনজিন (C₆H₆) অণুতে সব কার্বন-কার্বন বন্ধনের বন্ধন দৈর্ঘ্য 13.9 x 10⁻² nm। এ বিষয়টি ব্যাখ্যা করা যায়-",
+          options: {
+            A: "ইনডাকটিভ ফলাফলের সাহায্যে",
+            B: "হাইপারকনজুগেশনের মাধ্যমে",
+            C: "মেসোমারিক ফলাফলের সাহায্যে",
+            D: "রেজোনেন্স ফলাফলের মাধ্যমে",
+          },
+          correct: "D",
+          explanation:
+            "<p>বেনজিনের কার্বন-কার্বন বন্ধন দৈর্ঘ্য একক বন্ধন (0.154 nm) এবং দ্বিবন্ধন (0.134 nm) এর মাঝামাঝি হওয়ার কারণ হলো রেজোন্যান্স (Resonance)। বেনজিনের পাই ইলেকট্রনগুলো পুরো বলয় জুড়ে সুষমভাবে ছড়িয়ে থাকে, ফলে কোনো নির্দিষ্ট একক বা দ্বিবন্ধন থাকে না। এই রেজোন্যান্সের কারণে সব কার্বন-কার্বন বন্ধনের দৈর্ঘ্য সমান এবং একক ও দ্বিবন্ধনের মাঝামাঝি হয়।</p>",
+        },
+        {
+          id: 20,
+          question: "টলুইন অণুতে কার্বন পরমাণুগুলোর সংকরায়ন-",
+          options: {
+            A: "sp² ও sp",
+            B: "sp³ ও sp²",
+            C: "sp³ ও sp",
+            D: "sp³, sp² ও sp",
+          },
+          correct: "B",
+          explanation:
+            "<p>টলুইন (C₆H₅-CH₃) অণুতে দুই ধরনের সংকরিত কার্বন পরমাণু বিদ্যমান। বেনজিন বলয়ের ছয়টি কার্বন পরমাণু sp<sup>2</sup> সংকরিত কারণ তারা দ্বিবন্ধন এবং একক বন্ধন উভয়ই গঠন করে। অন্যদিকে, পার্শ্ব শিকলের মিথাইল (-CH₃) গ্রুপের কার্বন পরমাণুটি sp<sup>3</sup> সংকরিত কারণ এটি চারটি একক বন্ধন গঠন করে (একটি কার্বনের সাথে এবং তিনটি হাইড্রোজেনের সাথে)।</p>",
+        },
+        {
+          id: 21,
+          question: "বেনজিনের সালফোনেশন প্রক্রিয়া কোনটি?",
+          options: {
+            A: "নিউক্লিওফিলিক প্রতিস্থাপন বিক্রিয়া",
+            B: "নিউক্লিওফিলিক যুত বিক্রিয়া",
+            C: "ইলেকট্রোফিলিক প্রতিস্থাপন বিক্রিয়া",
+            D: "ইলেকট্রোফিলিক যুত বিক্রিয়া",
+          },
+          correct: "C",
+          explanation:
+            "<p>বেনজিনের সালফোনেশন (সালফোনিক এসিড গ্রুপ দ্বারা হাইড্রোজেন প্রতিস্থাপন) একটি ইলেকট্রোফিলিক প্রতিস্থাপন বিক্রিয়া। এই বিক্রিয়ায় ইলেকট্রোফাইল SO₃<sup>+</sup> (সালফার ট্রাইঅক্সাইড) বেনজিন বলয়ের হাইড্রোজেন পরমাণুকে প্রতিস্থাপন করে। অ্যারোমেটিক যৌগসমূহের ইলেকট্রন সমৃদ্ধ বলয় ইলেকট্রোফাইল দ্বারা সহজেই আক্রান্ত হয়।</p>",
+        },
+        {
+          id: 22,
+          question: 'বেনজালডিহাইডে (C₆H₅-CHO) "π-electron" কয়টি?',
+          options: {
+            A: "7",
+            B: "8",
+            C: "6",
+            D: "10",
+          },
+          correct: "B",
+          explanation:
+            "<p>বেনজালডিহাইড (C₆H₅-CHO) যৌগে দুটি প্রধান অংশ রয়েছে: একটি বেনজিন বলয় এবং একটি অ্যালডিহাইড (-CHO) গ্রুপ।</p>\n    <ul>\n        <li>বেনজিন বলয়ে 3টি দ্বিবন্ধন আছে, যা থেকে 3 × 2 = 6টি π ইলেকট্রন আসে।</li>\n        <li>অ্যালডিহাইড (-CHO) গ্রুপে একটি কার্বন-অক্সিজেন দ্বিবন্ধন (C=O) আছে, যা থেকে 1 × 2 = 2টি π ইলেকট্রন আসে।</li>\n    </ul>\n    <p>সুতরাং, বেনজালডিহাইড অণুতে মোট 6 + 2 = 8টি π ইলেকট্রন রয়েছে।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "অনার্দ্র AlCl₃-এর উপস্থিতিতে বেনজিন ও অ্যালকাইল হ্যালাইডের বিক্রিয়াকে কী বলে?",
+          options: {
+            A: "গ্রিগনার্ড রিঅ্যাকশন",
+            B: "নিউক্লিওফিলিক প্রতিস্থাপন",
+            C: "ফ্রিডেল-ক্রাফট বিক্রিয়া",
+            D: "হ্যালোজেনেশন",
+          },
+          correct: "C",
+          explanation:
+            "<p>অনার্দ্র AlCl₃ (বা অন্যান্য লুইস অ্যাসিড) এর উপস্থিতিতে বেনজিন বা এর ডেরিভেটিভের সাথে অ্যালকাইল হ্যালাইডের বিক্রিয়াকে ফ্রিডেল-ক্রাফট অ্যালকাইলেশন বিক্রিয়া বলে। এটি একটি ইলেকট্রনাকর্ষী অ্যারোমেটিক প্রতিস্থাপন বিক্রিয়া, যেখানে অ্যালকাইল গ্রুপ বেনজিন বলয়ে সংযুক্ত হয়।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "বেনজিনকে গাঢ় নাইট্রিক এসিড ও গাঢ় সালফিউরিক এসিডের সাথে বিক্রিয়া করালে বেনজিনের-",
+          options: {
+            A: "মালফোনেশন ঘটে",
+            B: "নাইট্রেশন ঘটে",
+            C: "সালফোনেশন ও নাইট্রেশন উভয়ই ঘটে",
+            D: "কোনো পরিবর্তন ঘটে না",
+          },
+          correct: "B",
+          explanation:
+            "<p>বেনজিনকে গাঢ় নাইট্রিক এসিড এবং গাঢ় সালফিউরিক এসিডের মিশ্রণ (নাইট্রেটিং মিশ্রণ) দ্বারা উত্তপ্ত করলে নাইট্রেশন বিক্রিয়া ঘটে। এই বিক্রিয়ায় NO₂⁺ ইলেকট্রোফাইল বেনজিন বলয়ের হাইড্রোজেন পরমাণুকে প্রতিস্থাপন করে নাইট্রোবেনজিন উৎপন্ন করে। সালফিউরিক এসিড প্রভাবক হিসেবে কাজ করে এবং নাইট্রেটিং ইলেকট্রোফাইল উৎপাদনে সাহায্য করে।</p>",
+        },
+        {
+          id: 25,
+          question: "বেনজিন প্রস্তুতির সঠিক বিক্রিয়া কোনটি?",
+          options: {
+            A: "C₆H₅OH + Zn → C₆H₆ + ZnO",
+            B: "C₆H₅MgCl + H₂O → C₆H₆ + Mg(OH)Cl",
+            C: "3C₂H₂ → C₆H₆",
+            D: "উপরের সবগুলোই",
+          },
+          correct: "D",
+          explanation:
+            "<p>উপরের সবগুলো বিক্রিয়াই বেনজিন প্রস্তুতের সঠিক পদ্ধতি।</p>\n    <ul>\n        <li><b>C₆H₅OH + Zn → C₆H₆ + ZnO:</b> ফেনলকে জিঙ্ক চূর্ণের সাথে উত্তপ্ত করলে বেনজিন উৎপন্ন হয়।</li>\n        <li><b>C₆H₅MgCl + H₂O → C₆H₆ + Mg(OH)Cl:</b> ফিনাইল ম্যাগনেসিয়াম ব্রোমাইড (গ্রিগনার্ড বিকারক) জলীয় বিশ্লেষণের মাধ্যমে বেনজিন উৎপন্ন করে।</li>\n        <li><b>3C₂H₂ → C₆H₆:</b> অ্যাসিটিলিনকে উত্তপ্ত লোহার নলে চালনা করলে ট্রাইমারাইজেশনের মাধ্যমে বেনজিন উৎপন্ন হয়।</li>\n    </ul>",
+        },
+        {
+          id: 26,
+          question:
+            "টলুইন (C₆H₅-CH₃) অণুতে একই তলে অবস্থান করে এমন C ও H পরমাণুর সংখ্যা যথাক্রমে-",
+          options: {
+            A: "7 ও 3",
+            B: "6 ও 5",
+            C: "7 ও 8",
+            D: "7 ও 5",
+          },
+          correct: "D",
+          explanation:
+            "<p>টলুইনের (C₆H₅-CH₃) বেনজিন বলয়টি সমতলীয়। এই বলয়ে 6টি কার্বন পরমাণু এবং 5টি হাইড্রোজেন পরমাণু (যেগুলো সরাসরি বেনজিন বলয়ের সাথে যুক্ত) একই তলে অবস্থান করে। মিথাইল (-CH₃) গ্রুপের কার্বন পরমাণুটিও বলয়ের কার্বনের সাথে সরাসরি যুক্ত, তাই সেটিও এই তলের অংশ। কিন্তু মিথাইল গ্রুপের 3টি হাইড্রোজেন পরমাণু এই তলে থাকে না, কারণ মিথাইল গ্রুপ sp<sup>3</sup> সংকরিত এবং টেট্রাহেড্রাল জ্যামিতি প্রদর্শন করে। সুতরাং, একই তলে অবস্থান করে এমন C পরমাণু 7টি (6টি বলয়ের C + 1টি মিথাইল C) এবং H পরমাণু 5টি (বলয়ের 5টি H)।</p>",
+        },
+        {
+          id: 27,
+          question: "ফ্রিডেল ক্রাফট অ্যালকাইলেশন বিক্রিয়টি হলো-",
+          options: {
+            A: "নিউক্লিওফিলিক প্রতিস্থাপন বিক্রিয়া",
+            B: "ইলেকট্রোফিলিক প্রতিস্থাপন বিক্রিয়া",
+            C: "ইলেকট্রোফিলিক যুত বিক্রিয়া",
+            D: "মুক্ত মূলক প্রতিস্থাপন বিক্রিয়া",
+          },
+          correct: "B",
+          explanation:
+            "<p>ফ্রিডেল-ক্রাফট অ্যালকাইলেশন বিক্রিয়াটি একটি ইলেকট্রোফিলিক প্রতিস্থাপন বিক্রিয়া। এই বিক্রিয়ায় অ্যালকাইল হ্যালাইড এবং লুইস অ্যাসিড প্রভাবকের (যেমন AlCl₃) বিক্রিয়ায় একটি শক্তিশালী ইলেকট্রোফাইল (কার্বোক্যাটায়ন) উৎপন্ন হয়। এই ইলেকট্রোফাইল বেনজিন বলয়ের হাইড্রোজেন পরমাণুকে প্রতিস্থাপন করে অ্যালকাইল বেনজিন তৈরি করে। অ্যারোমেটিক যৌগসমূহের বৈশিষ্ট্যমূলক বিক্রিয়া হলো ইলেকট্রনাকর্ষী প্রতিস্থাপন।</p>",
+        },
+        {
+          id: 28,
+          question: "বেনজিনের নাইট্রেশনের জন্য কোন নাইট্রেটিং এজেন্টের দরকার?",
+          options: {
+            A: "NO₂⁺",
+            B: "NO₂⁻",
+            C: "NO₂",
+            D: "NO₂⁻",
+          },
+          correct: "A",
+          explanation:
+            "<p>বেনজিনের নাইট্রেশন বিক্রিয়ায় সক্রিয় ইলেকট্রোফাইল হিসেবে নাইট্রোনিয়াম আয়ন (NO₂⁺) প্রয়োজন হয়। এটি গাঢ় নাইট্রিক এসিড এবং গাঢ় সালফিউরিক এসিডের মিশ্রণ থেকে উৎপন্ন হয়। সালফিউরিক এসিড নাইট্রিক এসিডকে প্রোটোনেটেড করে, যা থেকে জল বিয়োজিত হয়ে NO₂⁺ উৎপন্ন হয়। এই NO₂⁺ আয়ন বেনজিন বলয়ে আক্রমণ করে নাইট্রোবেনজিন তৈরি করে।</p>",
+        },
+        {
+          id: 29,
+          question: "হ্যালোজেনোবেনজিন থেকে টলুইন তৈরীর বিক্রিয়াকে বলা হয়-",
+          options: {
+            A: "ফ্রিডেল ক্রাফট অ্যালকাইলেশন বিক্রিয়া",
+            B: "উর্টজ ফিটিগ বিক্রিয়া",
+            C: "অ্যানিলিন বিক্রিয়া",
+            D: "রিফর্মিং প্রক্রিয়া",
+          },
+          correct: "B",
+          explanation:
+            "<p>হ্যালোজেনোবেনজিন (অ্যারাইল হ্যালাইড) থেকে টলুইন (অ্যালকাইল বেনজিন) তৈরির জন্য উর্টজ-ফিটিগ বিক্রিয়া ব্যবহার করা হয়। এই বিক্রিয়ায় একটি অ্যারাইল হ্যালাইড এবং একটি অ্যালকাইল হ্যালাইড (যেমন মিথাইল হ্যালাইড) শুষ্ক ইথার দ্রাবকে সোডিয়াম ধাতুর সাথে বিক্রিয়া করে। ফলস্বরূপ, ফিনাইল মূলক এবং মিথাইল মূলক একত্রিত হয়ে টলুইন উৎপন্ন করে।</p>\n    <p>উদাহরণ: C₆H₅Br + CH₃Br + 2Na → C₆H₅CH₃ + 2NaBr (শুষ্ক ইথার)</p>",
+        },
+        {
+          id: 30,
+          question:
+            "যদি ইথাইল বেনজিনকে KMnO₄ এর সাথে তাপ নেওয়া হয়, তবে নিচের কোনটি উৎপন্ন হয়?",
+          options: {
+            A: "বেনজিন",
+            B: "বেনজোয়িক এসিড",
+            C: "টলুইন",
+            D: "ইথেন",
+          },
+          correct: "B",
+          explanation:
+            "<p>ইথাইল বেনজিনকে (C₆H₅CH₂CH₃) শক্তিশালী জারক যেমন ক্ষারীয় পটাশিয়াম পারম্যাঙ্গানেট (KMnO₄) দ্বারা উত্তপ্ত করলে, বেনজিন বলয়ের সাথে সরাসরি যুক্ত অ্যালকাইল পার্শ্ব শিকলটি জারিত হয়ে কার্বক্সিলিক এসিড গ্রুপে (-COOH) পরিণত হয়। এক্ষেত্রে, ইথাইল বেনজিন জারিত হয়ে বেনজোয়িক এসিড (C₆H₅COOH) উৎপন্ন করে, পার্শ্ব শিকলের দৈর্ঘ্য যাই হোক না কেন, এটি সম্পূর্ণ জারিত হয়ে কার্বক্সিলিক এসিডে পরিণত হয়।</p>",
+        },
+        {
+          id: 31,
+          question: "বেনজিনকে ওজোনীকরণ করলে নিচের কোন যৌগটি পাওয়া যায়?",
+          options: {
+            A: "অক্সালিক এসিড",
+            B: "গ্লাইঅক্সিম",
+            C: "গ্লাইঅক্সাল",
+            D: "গ্লাইসিন",
+          },
+          correct: "C",
+          explanation:
+            "<p>বেনজিনকে ওজোনীকরণ (ওজোন (O₃) দ্বারা বিক্রিয়া) করলে, বেনজিন বলয়ের তিনটি দ্বিবন্ধনই ভেঙে যায় এবং গ্লাইঅক্সাল (CHO-CHO) অণু উৎপন্ন হয়। এই বিক্রিয়াটি বেনজিনের কাঠামোর প্রমাণ হিসেবেও ব্যবহৃত হয়, কারণ এটি বেনজিনের চাক্রিক ও অসম্পৃক্ত প্রকৃতির ইঙ্গিত দেয়।</p>",
+        },
+        {
+          id: 32,
+          question:
+            "টলুইন (ফুটন্ত) + Cl₂ → X + HCl; X এ কয়টি ক্লোরিন পরমাণু যুক্ত আছে?",
+          options: {
+            A: "1",
+            B: "2",
+            C: "3",
+            D: "6",
+          },
+          correct: "C",
+          explanation:
+            "<p>ফুটন্ত টলুইনে বা সূর্যালোকের উপস্থিতিতে ক্লোরিনের সাথে বিক্রিয়া করলে বেনজিন বলয়ের পার্শ্ব শিকলের হাইড্রোজেন পরমাণুগুলো প্রতিস্থাপিত হয়। টলুইনের মিথাইল (-CH₃) গ্রুপে তিনটি হাইড্রোজেন পরমাণু আছে। সম্পূর্ণ বিক্রিয়ায় এই তিনটি হাইড্রোজেন পরমাণুই ক্লোরিন দ্বারা প্রতিস্থাপিত হয়, ফলে বেনজো ট্রাইক্লোরাইড (C₆H₅CCl₃) উৎপন্ন হয়। সুতরাং, X যৌগে 3টি ক্লোরিন পরমাণু যুক্ত আছে।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "বেনজিন আলোর উপস্থিতিতে Cl₂ এর সঙ্গে বিক্রিয়ায় উৎপন্ন করে-",
+          options: {
+            A: "ক্লোরোবেনজিন",
+            B: "বেনজিন হেক্সাক্লোরাইড",
+            C: "ডাইক্লোরো বেনজিন",
+            D: "ক্লোরোফরম",
+          },
+          correct: "B",
+          explanation:
+            "<p>আলোর উপস্থিতিতে, বেনজিন এবং ক্লোরিনের মধ্যে সংযোজন বিক্রিয়া ঘটে, যেখানে বেনজিনের দ্বিবন্ধনগুলি ভেঙে যায় এবং প্রতিটি কার্বন পরমাণুর সাথে ক্লোরিন যুক্ত হয়। এই বিক্রিয়ায় বেনজিন হেক্সাক্লোরাইড (C₆H₆Cl₆) বা গ্যামেক্সিন উৎপন্ন হয়। এটি ইলেকট্রোফিলিক প্রতিস্থাপন বিক্রিয়ার বিপরীতে একটি যুত বিক্রিয়া।</p>",
+        },
+        {
+          id: 34,
+          question: "কোন যৌগটি ক্ষারীয় KMnO₄ এর সাথে বিক্রিয়া করে না?",
+          options: {
+            A: "CH₂=CH₂",
+            B: "CH≡CH",
+            C: "CH₃CH=CH₂",
+            D: "C₆H₆",
+          },
+          correct: "D",
+          explanation:
+            "<p>ক্ষারীয় KMnO₄ (বেয়ার বিকারক) একটি শক্তিশালী জারক, যা অসম্পৃক্ত যৌগ (যেমন অ্যালকেন ও অ্যালকাইন) এবং সক্রিয় অ্যালকাইল পার্শ্ব শিকলযুক্ত অ্যারোমেটিক যৌগকে জারিত করে। CH₂=CH₂ (ইথিন), CH≡CH (ইথাইন), এবং CH₃CH=CH₂ (প্রোপিন) সকলেই অসম্পৃক্ত এবং বেয়ার বিকারকের সাথে বিক্রিয়া করে। কিন্তু বেনজিন (C₆H₆) এর বিশেষ অ্যারোমেটিক স্থায়িত্বের কারণে এটি সাধারণত ক্ষারীয় KMnO₄ এর সাথে বিক্রিয়া করে না বা খুব ধীর গতিতে করে।</p>",
+        },
+        {
+          id: 35,
+          question:
+            "A + H₂ 200°C তাপমাত্রায় Ni চূর্ণের উপস্থিতিতে A-তে কয় অণু H₂ যুক্ত হতে পারে?",
+          options: {
+            A: "1",
+            B: "2",
+            C: "3",
+            D: "6",
+          },
+          correct: "C",
+          explanation:
+            "<p>যদি 'A' যৌগটি বেনজিন (C₆H₆) হয়, তবে 200°C তাপমাত্রায় নিকেল (Ni) চূর্ণ প্রভাবকের উপস্থিতিতে হাইড্রোজেন সংযোজন বিক্রিয়ায় প্রতি অণু বেনজিনে 3 অণু হাইড্রোজেন (H₂) যুক্ত হয়। এই বিক্রিয়ায় বেনজিন সম্পৃক্ত হয়ে সাইক্লোহেক্সেন (C₆H₁₂) উৎপন্ন করে। এটি বেনজিনের অসম্পৃক্ততার প্রমাণ হিসেবেও কাজ করে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                              <label class="option" data-option="${option}">
+                                                <div class="circle">${option}</div>
+                                                <span class="option-text">${question.options[option]}</span>
+                                              </label>
+                                            `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                 <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                 <div class="explanation-content">
+                                                   <div class="explanation-label">ব্যাখ্যা:</div>
+                                                   ${question.explanation}
+                                                 </div>
+                                               </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                            <p class="question-label">${
+                                              index + 1
+                                            }. ${question.question}</p>
+                                            <div class="options">
+                                              ${optionsHTML}
+                                            </div>
+                                            ${explanationHTML}
+                                          `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
